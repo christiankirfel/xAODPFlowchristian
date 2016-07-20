@@ -1,0 +1,96 @@
+README based on https://twiki.cern.ch/twiki/bin/viewauth/AtlasComputing/SoftwareTutorialxAODAnalysisInROOT
+
+https://twiki.cern.ch/twiki/bin/viewauth/AtlasProtected/EventLoop#Access_the_Data_Through_xAOD_EDM
+https://twiki.cern.ch/twiki/bin/viewauth/AtlasProtected/SampleHandler
+
+-------------
+0. Starting
+-------------
+ssh -Y lxplus.cern.ch 
+setupATLAS  (if you are not working on lxplus have a look into the first link) 
+
+-----------------------------
+1.Setup the Analysis Release
+-----------------------------
+mkdir PFlowAnaPackage
+cd PFlowAnaPackage
+lsetup 'rcsetup Base,2.3.45' (update the Analysis Base when needed)
+git clone https://github.com/reginamoles/PFlowAna.git
+or
+git clone git@github.com:reginamoles/PFlowAna.git
+
+(you also need the xAODCalCellInfo package to prevent conflics open a new terminal to checkout the package)
+asetup 20.1.4.8
+export SVNROOT=svn+ssh://svn.cern.ch/reps/atlas-mhodgkin
+cmt co -r xAODCalCellInfo-00-00-06 mhodgkin/xAODCalCellInfo
+
+rc find_packages
+rc compile
+
+-----------------------------------
+2.What to do every time you log in
+-----------------------------------
+setupATLAS
+lsetup rcsetup (in your working directory which contains the RootCoreBin)
+
+-----------------------------------
+3.Running
+-----------------------------------
+Running the job from a compiled application is useful to identify problems.
+The directory PFlowAna/util/ has been created with an executable source testRun.cxx
+
+You have to change the directory where the files are:
+export DataFiles=/afs/cern.ch/user/m/moles/workspace/MC/AOD/
+In testRun.cxx:
+SH::DiskListLocal list("$DataFiles/JZ3/user.moles.147913.Pythia8_AU2CT10_jetjet_JZ3W.recon.AOD.e3099_s2832_r7617_AOD.67276209/");
+
+Execute the compiled steering macro by doing: testRun NameDir
+
+----------------------------------
+4.Checking out extra packages
+----------------------------------
+To see the package tags in the release: rc version
+To change to a different tag in the release: rc checkout_pkg <new path>
+You have to find_packages and compile after each change
+
+----------------------------------------------
+5.How to update to a newer Analysis Release
+----------------------------------------------
+Unsetup the last Analysis Release: lsetup 'rcsetup -u'
+Update to newer version:
+lsetup 'rcsetup Base,9.9.99' (it doesn´t exist yet)
+rc find_packages
+rc clean
+rc compile
+
+-----------------------
+6.PFlowAna Structure
+-----------------------
+CMT directory: contains the makefile (to be modify if you include dependencies from other packages)
+PFlowAna directory: C++ header files must stay
+Root directory: C++ source files must stay. It also holds the LinkDef.h file that ROOT uses to build dictionaries.
+
+---------------
+7.EventLoop
+---------------  
+EventLoop is used for looping over events. It is a package maintained and suported by the ASG group (this group will help you debug your EventLoop code, add extra features, etc.)
+* New classes used for your package have to be added to the MyAnalysis/Root/LinkDef.h file.  
+* To create a member variable you have to add the variable (with the include statement if necessary) to the header (xAODPFlowAna.h):
+     - member variable initialized in initialize() --> variable //!
+       (you should add this to all variables in your algorithm, except for configuration parameters)
+     - member initialize when the stering macro is executed --> variable
+
+-----------------------
+8.Package dependencies 
+-----------------------
+Foe any new package:
+    1.Update the package dependencies in Makefile.RootCore
+    2.Inlcude the header files in Root/xAODPFlowAna.cxx
+
+- xAODRootAccess package:include important classes, among others the xAOD::TEvent class used to read and write information from the xAOD and the xAOD::Init class to handle any xAOD access.
+
+
+------------------------------------------
+9. New branch in the git repository 
+   created for dataMC studies
+------------------------------------------
